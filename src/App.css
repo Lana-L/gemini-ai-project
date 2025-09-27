@@ -15,3 +15,34 @@
   border-radius: 5px;
   z-index: 1000;
 }
+
+.search-box {
+  position: absolute;
+  top: 10px;
+  left: 50px;
+  z-index: 1000;
+}
+
+.search-box input,
+.search-box button {
+  height: 30px;
+  box-sizing: border-box;
+  margin: 0;
+  vertical-align: top;
+  padding: 0;
+}
+
+.error-message {
+  position: absolute;
+  top: 50px;
+  left: 50px;
+  background-color: red;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 1000;
+  height: 30px;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+}

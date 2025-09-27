@@ -36,26 +36,76 @@ function PopupContent({ lat, lon }) {
   );
 }
 
-function App() {
-  const [vehicles, setVehicles] = useState([]);
+function SearchBox({ setCity, setMapCenter }) {
+  const [inputValue, setInputValue] = useState("wellington");
 
-  useEffect(() => {
-    fetch("https://api.mevo.co.nz/public/vehicles/wellington")
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    fetch(`https://nominatim.openstreetmap.org/search?q=${inputValue}&format=json&limit=1&countrycodes=nz`)
       .then((response) => response.json())
-      .then((data) => setVehicles(data.data.features));
-  }, []);
+      .then((data) => {
+        if (data.length > 0) {
+          const { lat, lon } = data[0];
+          setCity(inputValue);
+          setMapCenter([lat, lon]);
+        }
+      });
+  };
 
   return (
-    <MapContainer center={[-41.28664, 174.77557]} zoom={13} style={{ height: "100vh", width: "100vw" }}>
-      <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
-      {vehicles.map((vehicle, index) => (
-        <Marker key={index} position={[vehicle.geometry.coordinates[1], vehicle.geometry.coordinates[0]]} icon={mevoIcon}>
-          <Popup>
-            <PopupContent lat={vehicle.geometry.coordinates[1]} lon={vehicle.geometry.coordinates[0]} />
-          </Popup>
-        </Marker>
-      ))}
-    </MapContainer>
+    <div className="search-box">
+      <form onSubmit={handleSubmit}>
+        <input
+          type="text"
+          value={inputValue}
+          onChange={(e) => setInputValue(e.target.value)}
+          placeholder="Enter city"
+        />
+        <button type="submit">Search</button>
+      </form>
+    </div>
+  );
+}
+
+function App() {
+  const [vehicles, setVehicles] = useState([]);
+  const [city, setCity] = useState("wellington");
+  const [mapCenter, setMapCenter] = useState([-41.28664, 174.77557]);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    fetch(`https://api.mevo.co.nz/public/vehicles/${city}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`Service not available in ${city}`);
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setVehicles(data.data.features);
+        setError(null);
+      })
+      .catch((error) => {
+        setError(error.message);
+        setVehicles([]);
+      });
+  }, [city]);
+
+  return (
+    <>
+      <SearchBox setCity={setCity} setMapCenter={setMapCenter} />
+      {error && <div className="error-message">{error}</div>}
+      <MapContainer key={JSON.stringify(mapCenter)} center={mapCenter} zoom={13} style={{ height: "100vh", width: "100vw" }}>
+        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' />
+        {vehicles.map((vehicle, index) => (
+          <Marker key={index} position={[vehicle.geometry.coordinates[1], vehicle.geometry.coordinates[0]]} icon={mevoIcon}>
+            <Popup>
+              <PopupContent lat={vehicle.geometry.coordinates[1]} lon={vehicle.geometry.coordinates[0]} />
+            </Popup>
+          </Marker>
+        ))}
+      </MapContainer>
+    </>
   );
 }
 
